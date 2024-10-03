@@ -12,15 +12,13 @@ ui <- dashboardPage(
                menuSubItem("Filter", tabName = "opcion3_kegg"),
                menuSubItem("Functional Analysis", tabName = "opcion1_kegg"),
                menuSubItem("Network Analysis", tabName = "opcion2_kegg"),
-               menuSubItem("HeatMap",tabName = "Heatmap"),
-               menuSubItem("Volcano",tabName = "Volcano")
+               menuSubItem("HeatMap",tabName = "Heatmap")
       ),
       menuItem("Gene Ontologies", tabName = "gene_ontologies", icon = icon("dna"),
                menuSubItem("Filter", tabName = "opcion3_gene_ontologies"),
                menuSubItem("Functional Analysis", tabName = "opcion1_gene_ontologies"),
                menuSubItem("Network Analysis", tabName = "opcion2_gene_ontologies"),
-               menuSubItem("HeatMap",tabName = "Heatmap_go"),
-               menuSubItem("Volcano",tabName = "Volcano_go")
+               menuSubItem("HeatMap",tabName = "Heatmap_go")
       ),
       menuItem("HELP", tabName = "contact", icon = icon("clipboard-user"))
     )
@@ -209,7 +207,8 @@ ui <- dashboardPage(
                     fileInput("file_heatmap_go", "Upload KEGG Data"),
                     selectInput("sample_heatmap_go", "Sample", choices = NULL),
                     selectInput("disease_heatmap_go", "Disease", choices = NULL),
-                    selectInput("ont_description_heatmap_go", "Ontology Description", choices = NULL),  # Nuevo filtro
+                    selectInput("ont_description_heatmap_go", "Ontology Description", choices = NULL),  
+                    selectInput("first_level_heatmap_go", "First Level", choices = NULL),  
                     downloadButton("download_heatmap_go", "Download Heatmap")
                 ),
                 box(title = "Heatmap Visualization",
@@ -1082,15 +1081,30 @@ So here are the gene ontologies to analyze:\\n\\n"
       updateSelectInput(session, "ont_description_heatmap_go", choices = unique(filtered_data$ONT_DESCRIPTION))
     })
     
-    # Observador para crear el heatmap basado en las selecciones del usuario
+    # Observador para actualizar los first_ancestor según las selecciones anteriores
     observeEvent(input$ont_description_heatmap_go, {
-      req(input$ont_description_heatmap_go)
+      req(input$ont_description_heatmap_go, input$sample_heatmap_go, input$disease_heatmap_go)
       
-      # Filtrar datos basados en las selecciones del usuario
+      # Filtrar datos basados en sample, disease y ont_description
       filtered_data <- dataset %>%
         filter(sample == input$sample_heatmap_go, 
                Disease == input$disease_heatmap_go,
-               ONT_DESCRIPTION == input$ont_description_heatmap_go)  # Añadir el filtro de ONT_DESCRIPTION
+               ONT_DESCRIPTION == input$ont_description_heatmap_go)
+      
+      # Actualizar el selectInput de first_ancestor
+      updateSelectInput(session, "first_level_heatmap_go", choices = unique(filtered_data$first_ancestor_name))
+    })
+    
+    # Observador para crear el heatmap basado en todas las selecciones del usuario
+    observeEvent(input$first_level_heatmap_go, {
+      req(input$first_level_heatmap_go)
+      
+      # Filtrar datos basados en todas las selecciones del usuario
+      filtered_data <- dataset %>%
+        filter(sample == input$sample_heatmap_go, 
+               Disease == input$disease_heatmap_go,
+               ONT_DESCRIPTION == input$ont_description_heatmap_go,
+               first_ancestor_name == input$first_level_heatmap_go)  # Añadir el filtro de first_ancestor
       
       # Agrupar y resumir los datos
       heatmap_data <- filtered_data %>%
@@ -1129,4 +1143,7 @@ So here are the gene ontologies to analyze:\\n\\n"
       }
     )
   })
+  
 }
+
+
